@@ -60,5 +60,29 @@ ENDPOINTS = {
     "set_app_policy": {
         "url": "{BASE_URL}/v2/appLimits/policies/{USER_ID}/{APP_ID}",
         "method": "PATCH"
+    },
+    "update_web_restrictions": {
+        "url": "{BASE_URL}/v1/WebRestrictions/{USER_ID}",
+        "method": "PATCH"
+    },
+    "update_content_restrictions": {
+        "url": "{BASE_URL}/v1/ContentRestrictions/{USER_ID}",
+        "method": "PATCH"
+    },
+    "get_additional_permission_token": {
+        "url": "{BASE_URL}/v1/FamilyPermission/permissiontoken/{USER_ID}?scopes={SCOPES}",
+        "method": "GET"
+    },
+    "get_named_locations": {
+        "url": "{BASE_URL}/v1/namedlocation",
+        "method": "GET"
+    },
+    "add_named_location": {
+        "url": "{BASE_URL}/v1/namedlocation",
+        "method": "POST"
+    },
+    "delete_named_location": {
+        "url": "{BASE_URL}/v1/namedlocation/{LOCATION_ID}",
+        "method": "DELETE"
     }
 }
