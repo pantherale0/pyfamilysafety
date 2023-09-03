@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """Authenticator constants"""
 
 CLIENT_ID = "dce5010f-c52d-4353-ae86-d666373528d8"

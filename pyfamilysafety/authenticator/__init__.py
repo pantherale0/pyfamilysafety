@@ -1,11 +1,12 @@
+# pylint: disable=line-too-long
 """Microsoft authentication handler."""
 
 import logging
 import re
 import asyncio
-import aiohttp
-
 from datetime import datetime, timedelta
+
+import aiohttp
 from pyfamilysafety.exceptions import Unauthorized
 
 from .const import (
@@ -44,12 +45,17 @@ class Authenticator:
         self._login_lock: asyncio.Lock = asyncio.Lock()
 
     @classmethod
-    async def create(cls, redirect_url: str) -> 'Authenticator':
+    async def create(cls, token: str, use_refresh_token: bool=False) -> 'Authenticator':
         """Creates and starts a Microsoft auth session without retaining the username and password."""
         auth = cls()
-        redir_parsed = _parse_redirect_url(redirect_url)
-        await auth.perform_login(redir_parsed["code"], redir_parsed["lc"])
-        return auth
+        if use_refresh_token:
+            auth.refresh_token = token
+            await auth.perform_refresh()
+            return auth
+        else:
+            redir_parsed = _parse_redirect_url(token)
+            await auth.perform_login(redir_parsed["code"])
+            return auth
 
     async def _request_handler(self, method, url, body=None, headers=None, data=None):
         """Send a HTTP request"""
@@ -78,7 +84,7 @@ class Authenticator:
                 response["headers"] = resp.headers
         return response
 
-    async def perform_login(self, auth_code, lc):
+    async def perform_login(self, auth_code):
         """Performs login from the username and password."""
         if self._login_lock.locked():
             while self._login_lock.locked():

@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """pyfamilysafety"""
 
 BASE_URL = "https://mobileaggregator.family.microsoft.com/api"
@@ -10,7 +11,7 @@ ENDPOINTS = {
         "method": "GET"
     },
     "get_pending_requests": {
-        "url": "{BASE_URL}/v1/PendingRequests?culture={CULTURE}",
+        "url": "{BASE_URL}/v1/PendingRequests",
         "method": "GET"
     },
     "get_premium_entitlement": {
