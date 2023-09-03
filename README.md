@@ -3,7 +3,9 @@ A Microsoft Family Safety implementation written in Python
 
 ## Getting started
 
-TBC
+**Looking for the Home Assistant integration?** [Navigate here](https://github.com/pantherale0/ha-familysafety)
+
+Full API docs to follow at a later date as part of #1
 
 ### Log in
 
