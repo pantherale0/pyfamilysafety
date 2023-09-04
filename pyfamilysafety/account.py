@@ -4,6 +4,7 @@ from datetime import datetime, date, time, timedelta
 
 from .api import FamilySafetyAPI
 from .device import Device
+from .application import Application
 
 class Account:
     """Represents a single family safety account."""
@@ -16,21 +17,31 @@ class Account:
         self.first_name = None
         self.surname = None
         self.devices: list[Device] = None
+        self.applications: list[Application] = None
         self.today_screentime_usage: int = None
         self.average_screentime_usage: float = None
         self.screentime_usage: dict = None
+        self.application_usage: dict = None
         self._api: FamilySafetyAPI = api
 
     async def update(self) -> None:
         """Update all account details."""
         await self.get_screentime_usage()
-        await self.get_devices()
+        await self._get_devices()
+        await self._get_applications()
 
-    async def get_devices(self) -> list[Device]:
+    async def _get_devices(self) -> list[Device]:
         """Returns all devices on the account."""
         response = await self._api.send_request("get_user_devices", USER_ID=self.user_id)
         self.devices = Device.from_dict(response.get("json"), self.screentime_usage)
         return self.devices
+
+    async def _get_applications(self) -> list[Application]:
+        """Returns all applications on the account."""
+        if self.application_usage is None:
+            raise ValueError("Application usage not collected, call 'get_screentime_usage' first.")
+        self.applications = Application.from_app_activity_report(self.application_usage)
+        return self.applications
 
     async def get_screentime_usage(self,
                                    start_time: datetime = None,
@@ -45,7 +56,7 @@ class Account:
             default = True
             end_time = start_time + timedelta(hours=24)
 
-        response = await self._api.send_request(
+        device_usage = await self._api.send_request(
                 endpoint="get_user_device_screentime_usage",
                 USER_ID=self.user_id,
                 BEGIN_TIME=start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -53,18 +64,33 @@ class Account:
                 DEVICE_COUNT=device_count
             )
 
+        application_usage = await self._api.send_request(
+                endpoint="get_user_app_screentime_usage",
+                USER_ID=self.user_id,
+                BEGIN_TIME=start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                END_TIME=end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            )
+
         if default:
-            self.screentime_usage = response.get("json")
+            self.screentime_usage = device_usage.get("json")
             self.today_screentime_usage = self.screentime_usage["deviceUsageAggregates"]["totalScreenTime"]
             self.average_screentime_usage = self.screentime_usage["deviceUsageAggregates"]["dailyAverage"]
+            self.application_usage = application_usage.get("json")
             return self.screentime_usage
         else:
             # don't actually set a value
-            return response.get("json")
+            return {
+                "devices": device_usage.get("json"),
+                "applications": application_usage.get("json")
+            }
 
     def get_device(self, device_id) -> Device:
         """Returns a single device."""
         return [x for x in self.devices if x.device_id == device_id][0]
+
+    def get_application(self, application_id) -> Application:
+        """Returns a single application."""
+        return [x for x in self.applications if x.app_id == application_id][0]
 
     @classmethod
     async def from_dict(cls, api: FamilySafetyAPI, raw_response: dict) -> list['Account']:
