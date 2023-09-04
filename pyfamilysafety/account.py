@@ -56,7 +56,7 @@ class Account:
         if default:
             self.screentime_usage = response.get("json")
             self.today_screentime_usage = self.screentime_usage["deviceUsageAggregates"]["totalScreenTime"]
-            self.today_screentime_usage = self.screentime_usage["deviceUsageAggregates"]["dailyAverage"]
+            self.average_screentime_usage = self.screentime_usage["deviceUsageAggregates"]["dailyAverage"]
             return self.screentime_usage
         else:
             # don't actually set a value
