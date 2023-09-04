@@ -51,7 +51,7 @@ ENDPOINTS = {
         "method": "GET"
     },
     "get_override_device_restrictions": {
-        "url": "{BASE_URL}/v1/devicelimits/{USER_ID}/overrides?culture={CULTURE}",
+        "url": "{BASE_URL}/v1/devicelimits/{USER_ID}/overrides",
         "method": "GET"
     },
     "override_device_restriction": {

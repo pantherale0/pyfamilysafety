@@ -5,6 +5,7 @@ from datetime import datetime, date, time, timedelta
 from .api import FamilySafetyAPI
 from .device import Device
 from .application import Application
+from .enum import OverrideTarget, OverrideType
 
 class Account:
     """Represents a single family safety account."""
@@ -28,6 +29,7 @@ class Account:
         """Update all account details."""
         await self.get_screentime_usage()
         await self._get_devices()
+        await self._get_overrides()
         await self._get_applications()
 
     async def _get_devices(self) -> list[Device]:
@@ -35,6 +37,13 @@ class Account:
         response = await self._api.send_request("get_user_devices", USER_ID=self.user_id)
         self.devices = Device.from_dict(response.get("json"), self.screentime_usage)
         return self.devices
+
+    async def _get_overrides(self):
+        """Collects overrides."""
+        response = await self._api.send_request(
+            endpoint="get_override_device_restrictions",
+            USER_ID=self.user_id)
+        self._update_device_blocked(response.get("json"))
 
     async def _get_applications(self) -> list[Application]:
         """Returns all applications on the account."""
@@ -91,6 +100,38 @@ class Account:
     def get_application(self, application_id) -> Application:
         """Returns a single application."""
         return [x for x in self.applications if x.app_id == application_id][0]
+
+    async def override_device(self,
+                              target: OverrideTarget,
+                              override: OverrideType,
+                              valid_until: datetime = None) -> bool:
+        """Overrides a single device (block/unblock)"""
+        if override == OverrideType.UNTIL and valid_until is None:
+            raise ValueError("valid_until is required if using OverrideType.UNTIL")
+        if override == OverrideType.CANCEL:
+            valid_until = datetime.now()
+        response = await self._api.send_request(
+            endpoint="override_device_restriction",
+            body={
+                "overrideType": str(override),
+                "target": str(target),
+                "validUntil": valid_until.strftime("%Y-%m-%dT%H:%M:%SZ")
+            },
+            USER_ID=self.user_id
+        )
+        self._update_device_blocked(response.get("json"))
+
+    def _update_device_blocked(self, raw_response: dict):
+        """updates device(s) blocked status from a overrides response."""
+        platforms = raw_response.get("lockablePlatforms")
+        for platform in platforms:
+            # get if locked
+            state = len(platform.get("overrides"))>0
+            for device in platform.get("devices"):
+                try:
+                    self.get_device(device.get("deviceId").replace("g:", "")).update_blocked_status(state)
+                finally:
+                    pass
 
     @classmethod
     async def from_dict(cls, api: FamilySafetyAPI, raw_response: dict) -> list['Account']:

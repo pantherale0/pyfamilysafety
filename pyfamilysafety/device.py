@@ -16,6 +16,7 @@ class Device:
         self.issues = None
         self.states = None
         self.last_seen = None
+        self.blocked = None
 
     def read_screentime_report(self, screentime_report: dict):
         """Processes a screentime report."""
@@ -23,6 +24,10 @@ class Device:
         device_usage = [x for x in usage.get("deviceAggregates") if x["deviceId"] == self.device_id]
         if len(device_usage) > 0:
             self.today_time_used = device_usage[0].get("timeUsed")
+
+    def update_blocked_status(self, state: bool):
+        """Updates the blocked status."""
+        self.blocked = state
 
     @classmethod
     def from_dict(cls, raw_response: dict, screentime_report: dict) -> list['Device']:
