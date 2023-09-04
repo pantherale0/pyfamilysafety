@@ -23,6 +23,7 @@ class Account:
         self.average_screentime_usage: float = None
         self.screentime_usage: dict = None
         self.application_usage: dict = None
+        self.blocked_platforms: list[OverrideTarget] = None
         self._api: FamilySafetyAPI = api
 
     async def update(self) -> None:
@@ -124,14 +125,19 @@ class Account:
     def _update_device_blocked(self, raw_response: dict):
         """updates device(s) blocked status from a overrides response."""
         platforms = raw_response.get("lockablePlatforms")
+        blocked_platforms = []
         for platform in platforms:
             # get if locked
             state = len(platform.get("overrides"))>0
+            if state:
+                blocked_platforms.append(OverrideTarget.from_pretty(platform.get("appliesTo")))
+
             for device in platform.get("devices"):
                 try:
                     self.get_device(device.get("deviceId").replace("g:", "")).update_blocked_status(state)
                 finally:
                     pass
+        self.blocked_platforms = blocked_platforms
 
     @classmethod
     async def from_dict(cls, api: FamilySafetyAPI, raw_response: dict) -> list['Account']:

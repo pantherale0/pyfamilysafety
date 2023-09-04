@@ -20,6 +20,18 @@ class OverrideTarget(Enum):
             return "Xbox"
         return self.name
 
+    @classmethod
+    def from_pretty(cls, pretty) -> 'OverrideTarget':
+        """Returns from pretty."""
+        if pretty == "AllDevices":
+            return cls.ALL_DEVICES
+        if pretty == "Windows":
+            return cls.WINDOWS
+        if pretty == "Mobile":
+            return cls.MOBILE
+        if pretty == "Xbox":
+            return cls.XBOX
+
 class OverrideType(Enum):
     """A list of override types."""
     CANCEL = 0
