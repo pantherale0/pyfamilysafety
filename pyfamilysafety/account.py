@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """Family safety account handler."""
 
 from datetime import datetime, date, time, timedelta
