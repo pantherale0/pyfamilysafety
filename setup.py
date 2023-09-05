@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name="pyfamilysafety",
-      version="0.0.5",
+      version="0.0.6",
       description="Microsoft Family Safety API library",
       url="https://github.com/pantherale0/pyfamilysafety",
       author="pantherale0",
