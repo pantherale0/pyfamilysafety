@@ -14,6 +14,14 @@ ENDPOINTS = {
         "url": "{BASE_URL}/v1/PendingRequests",
         "method": "GET"
     },
+    "deny_pending_request": {
+        "url": "{BASE_URL}/v1/pendingRequests/deny/{USER_ID}",
+        "method": "POST"
+    },
+    "approve_pending_request": {
+        "url": "{BASE_URL}/v1/pendingRequests/approve/{USER_ID}",
+        "method": "POST"
+    },
     "get_premium_entitlement": {
         "url": "{BASE_URL}/v1/entitlement",
         "method": "GET"

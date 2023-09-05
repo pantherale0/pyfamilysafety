@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 
 import aiohttp
+import aiohttp.client_exceptions
 
 from .authenticator import Authenticator
 from .const import ENDPOINTS, BASE_URL
@@ -64,11 +65,15 @@ class FamilySafetyAPI:
                 _LOGGER.debug("Request to %s status code %s", url, response.status)
                 if _check_http_success(response.status):
                     resp["status"] = response.status
-                    resp["text"] = await response.text()
-                    resp["json"] = await response.json()
+                    if response.status != 204:
+                        resp["text"] = await response.text()
+                        try:
+                            resp["json"] = await response.json()
+                        except aiohttp.client_exceptions.ContentTypeError:
+                            _LOGGER.debug("Unable to parse JSON response - invalid content type.")
                     resp["headers"] = response.headers
                 else:
-                    raise HttpException("HTTP Error", response.status)
+                    raise HttpException("HTTP Error", response.status, await response.text())
 
         # now return the resp dict
         return resp
