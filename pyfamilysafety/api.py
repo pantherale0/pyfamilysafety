@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 """pyfamilysafety API request handler."""
 
 import logging
@@ -21,6 +22,7 @@ class FamilySafetyAPI:
     def __init__(self) -> None:
         """Init API."""
         self.authenticator: Authenticator = None
+        self._session: aiohttp.ClientSession = aiohttp.ClientSession()
 
     @classmethod
     async def create(cls, token: str, use_refresh_token: bool=False) -> 'FamilySafetyAPI':
@@ -42,8 +44,23 @@ class FamilySafetyAPI:
         if e_point is None:
             raise ValueError("Endpoint does not exist")
         # refresh the token if it has expired.
-        if self.authenticator.expires < datetime.now():
-            await self.authenticator.refresh_token()
+        if self.authenticator.expires is not None:
+            if self.authenticator.expires < datetime.now():
+                _LOGGER.debug("Token refresh required before continuing")
+                await self.authenticator.perform_refresh()
+                self._session.headers.pop("Authorization")
+
+        if self.authenticator.expires is None:
+            _LOGGER.warning("Missing expiration of access token in authenticator, attempting to refresh anyway.")
+            await self.authenticator.perform_refresh()
+            try:
+                self._session.headers.pop("Authorization")
+            except KeyError:
+                pass
+
+        if self._session.headers.get("Authorization", None) is None:
+            # Add the auth token
+            self._session.headers.add("Authorization", self._auth_token)
         # format the URL using the kwargs
         url = e_point.get("url").format(BASE_URL=BASE_URL, **kwargs)
         _LOGGER.debug("Built URL %s", url)
@@ -54,26 +71,23 @@ class FamilySafetyAPI:
             "json": "",
             "headers": ""
         }
-        async with aiohttp.ClientSession() as session:
-            # Add auth header
-            session.headers.add("Authorization", self._auth_token)
-            async with session.request(
-                method=e_point.get("method"),
-                url=url,
-                json=body
-            ) as response:
-                _LOGGER.debug("Request to %s status code %s", url, response.status)
-                if _check_http_success(response.status):
-                    resp["status"] = response.status
-                    if response.status != 204:
-                        resp["text"] = await response.text()
-                        try:
-                            resp["json"] = await response.json()
-                        except aiohttp.client_exceptions.ContentTypeError:
-                            _LOGGER.debug("Unable to parse JSON response - invalid content type.")
-                    resp["headers"] = response.headers
-                else:
-                    raise HttpException("HTTP Error", response.status, await response.text())
+        async with self._session.request(
+            method=e_point.get("method"),
+            url=url,
+            json=body
+        ) as response:
+            _LOGGER.debug("Request to %s status code %s", url, response.status)
+            if _check_http_success(response.status):
+                resp["status"] = response.status
+                if response.status != 204:
+                    resp["text"] = await response.text()
+                    try:
+                        resp["json"] = await response.json()
+                    except aiohttp.client_exceptions.ContentTypeError:
+                        _LOGGER.debug("Unable to parse JSON response - invalid content type.")
+                resp["headers"] = response.headers
+            else:
+                raise HttpException("HTTP Error", response.status, await response.text())
 
         # now return the resp dict
         return resp

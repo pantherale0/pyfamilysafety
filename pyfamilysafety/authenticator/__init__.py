@@ -131,6 +131,7 @@ class Authenticator:
                 data=form
             )
             _LOGGER.debug(">> Token request response %s", tokens["status"])
+            _LOGGER.debug(">> Token response value %s", tokens)
             if tokens["status"] == 200:
                 self.access_token = tokens["json"]["access_token"]
                 self.expires = datetime.now() + timedelta(seconds=tokens["json"]["expires_in"])
