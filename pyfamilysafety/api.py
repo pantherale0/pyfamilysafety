@@ -36,6 +36,10 @@ class FamilySafetyAPI:
         """Returns the auth token."""
         return f"MSAuth1.0 usertoken=\"{self.authenticator.access_token}\", type=\"MSACT\""
 
+    async def end_session(self):
+        """Ends the active session, this method should be called before GC."""
+        await self._session.close()
+
     async def send_request(self, endpoint: str, body: object=None, **kwargs):
         """Sends a request to a given endpoint."""
         _LOGGER.debug("Sending request to %s", endpoint)
