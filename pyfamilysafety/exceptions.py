@@ -17,3 +17,8 @@ class RequestDenied(HttpException):
 
     def __init__(self, message="HTTP Access Denied") -> None:
         super().__init__(message)
+
+class AggregatorException(HttpException):
+    """An Aggregator Error."""
+    def __init__(self) -> None:
+        super().__init__("An upstream aggregator error occured.")

@@ -4,6 +4,9 @@ import logging
 
 from .api import FamilySafetyAPI
 from .account import Account
+from .exceptions import AggregatorException
+
+_LOGGER = logging.getLogger(__name__)
 
 class FamilySafety:
     """The core family safety module."""
@@ -95,6 +98,9 @@ class FamilySafety:
 
     async def update(self):
         """Updates submodules"""
-        await self._get_pending_requests()
-        for account in self.accounts:
-            await account.update()
+        try:
+            await self._get_pending_requests()
+            for account in self.accounts:
+                await account.update()
+        except AggregatorException:
+            _LOGGER.warning("Aggregator exception occured, ignoring this update request.")

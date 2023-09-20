@@ -8,8 +8,8 @@ import aiohttp
 import aiohttp.client_exceptions
 
 from .authenticator import Authenticator
-from .const import ENDPOINTS, BASE_URL
-from .exceptions import HttpException
+from .const import ENDPOINTS, BASE_URL, AGGREGATOR_ERROR
+from .exceptions import HttpException, AggregatorException, Unauthorized, RequestDenied
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,6 +91,14 @@ class FamilySafetyAPI:
                         _LOGGER.debug("Unable to parse JSON response - invalid content type.")
                 resp["headers"] = response.headers
             else:
+                text = await response.text()
+                if response.status == 500 and AGGREGATOR_ERROR in text:
+                    raise AggregatorException()
+                if response.status == 401:
+                    raise Unauthorized()
+                if response.status == 403:
+                    raise RequestDenied(await response.text())
+
                 raise HttpException("HTTP Error", response.status, await response.text())
 
         # now return the resp dict

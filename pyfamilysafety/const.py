@@ -5,6 +5,8 @@ BASE_URL = "https://mobileaggregator.family.microsoft.com/api"
 APP_VERSION = "v 1.24.2.962"
 USER_AGENT = f"Family Safety-prod/({APP_VERSION}) Android/33 google/Pixel 4 XL"
 
+AGGREGATOR_ERROR = "Something went wrong in the Aggregator service"
+
 ENDPOINTS = {
     "get_accounts": {
         "url": "{BASE_URL}/v2/roster",

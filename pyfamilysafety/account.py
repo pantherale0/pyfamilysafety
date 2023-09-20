@@ -19,7 +19,7 @@ class Account:
         self.first_name = None
         self.surname = None
         self.devices: list[Device] = None
-        self.applications: list[Application] = None
+        self.applications: list[Application] = []
         self.today_screentime_usage: int = None
         self.average_screentime_usage: float = None
         self.screentime_usage: dict = None
@@ -51,7 +51,12 @@ class Account:
         """Returns all applications on the account."""
         if self.application_usage is None:
             raise ValueError("Application usage not collected, call 'get_screentime_usage' first.")
-        self.applications = Application.from_app_activity_report(self.application_usage)
+        parsed_applications = Application.from_app_activity_report(self.application_usage)
+        for app in parsed_applications:
+            try:
+                self.get_application(app.app_id).update(app)
+            except IndexError:
+                self.applications.append(app)    
         return self.applications
 
     async def get_screentime_usage(self,
