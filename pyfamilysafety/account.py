@@ -1,12 +1,15 @@
 # pylint: disable=line-too-long
 """Family safety account handler."""
 
+import logging
 from datetime import datetime, date, time, timedelta
 
 from .api import FamilySafetyAPI
 from .device import Device
 from .application import Application
 from .enum import OverrideTarget, OverrideType
+
+_LOGGER = logging.getLogger(__name__)
 
 class Account:
     """Represents a single family safety account."""
@@ -26,6 +29,8 @@ class Account:
         self.application_usage: dict = None
         self.blocked_platforms: list[OverrideTarget] = None
         self._api: FamilySafetyAPI = api
+        self.account_balance: float = 0.0
+        self.account_currency: str = ""
 
     async def update(self) -> None:
         """Update all account details."""
@@ -33,6 +38,7 @@ class Account:
         await self._get_devices()
         await self._get_overrides()
         await self._get_applications()
+        await self._get_account_balance()
 
     async def _get_devices(self) -> list[Device]:
         """Returns all devices on the account."""
@@ -51,13 +57,31 @@ class Account:
         """Returns all applications on the account."""
         if self.application_usage is None:
             raise ValueError("Application usage not collected, call 'get_screentime_usage' first.")
-        parsed_applications = Application.from_app_activity_report(self.application_usage)
+        parsed_applications = Application.from_app_activity_report(
+            self.application_usage,
+            self._api,
+            self.user_id)
         for app in parsed_applications:
             try:
                 self.get_application(app.app_id).update(app)
             except IndexError:
-                self.applications.append(app)    
+                self.applications.append(app)
         return self.applications
+
+    async def _get_account_balance(self):
+        """Updates the account balance."""
+        response = await self._api.send_request(
+            endpoint="get_user_spending",
+            USER_ID=self.user_id
+        )
+        response = response["json"]
+        balances = response.get("balances", [])
+        if len(balances) == 1:
+            self.account_balance = balances[0]["balance"]
+            self.account_currency = balances[0]["currency"]
+            return
+        _LOGGER.warning("Unknown account spending response, please report to developer. %s", response)
+        return
 
     async def get_screentime_usage(self,
                                    start_time: datetime = None,

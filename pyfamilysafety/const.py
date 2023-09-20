@@ -40,6 +40,10 @@ ENDPOINTS = {
         "url": "{BASE_URL}/v1/Spending/{USER_ID}",
         "method": "GET"
     },
+    "get_user_payment_methods": {
+        "url": "{BASE_URL}/v1/spending/paymentmethods/{USER_ID}?cid={CID}",
+        "method": "GET"
+    },
     "get_user_content_restrictions": {
         "url": "{BASE_URL}/v1/ContentRestrictions/{USER_ID}",
         "method": "GET"
