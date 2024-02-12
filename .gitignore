@@ -161,6 +161,3 @@ cython_debug/
 
 # ignore tempory xlsx files
 *~$*.xlsx
-
-# ignore temporary test files
-test*.py

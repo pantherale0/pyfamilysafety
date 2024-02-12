@@ -2,7 +2,7 @@
 """pyfamilysafety"""
 
 BASE_URL = "https://mobileaggregator.family.microsoft.com/api"
-APP_VERSION = "v 1.24.2.962"
+APP_VERSION = "v 1.26.0.1001"
 USER_AGENT = f"Family Safety-prod/({APP_VERSION}) Android/33 google/Pixel 4 XL"
 
 AGGREGATOR_ERROR = "Something went wrong in the Aggregator service"
@@ -29,7 +29,7 @@ ENDPOINTS = {
         "method": "GET"
     },
     "get_user_device_screentime_usage": {
-        "url": "{BASE_URL}/v1/activityreport/deviceScreenTimeUsage/{USER_ID}?beginTime={BEGIN_TIME}&endTime={END_TIME}&topDeviceCount={DEVICE_COUNT}",
+        "url": "{BASE_URL}/v4/activityreport/deviceScreenTimeUsage/{USER_ID}?beginTime={BEGIN_TIME}&endTime={END_TIME}&topDeviceCount={DEVICE_COUNT}",
         "method": "GET"
     },
     "get_user_devices": {
@@ -53,7 +53,7 @@ ENDPOINTS = {
         "method": "GET"
     },
     "get_user_app_screentime_usage": {
-        "url": "{BASE_URL}/v2/activityReport/appUsage/{USER_ID}?beginTime={BEGIN_TIME}&endTime={END_TIME}",
+        "url": "{BASE_URL}/v4/activityReport/appUsage/{USER_ID}?beginTime={BEGIN_TIME}&endTime={END_TIME}",
         "method": "GET"
     },
     "get_user_web_activity": {

@@ -40,7 +40,7 @@ class FamilySafetyAPI:
         """Ends the active session, this method should be called before GC."""
         await self._session.close()
 
-    async def send_request(self, endpoint: str, body: object=None, **kwargs):
+    async def send_request(self, endpoint: str, body: object=None, headers: dict=None, **kwargs):
         """Sends a request to a given endpoint."""
         _LOGGER.debug("Sending request to %s", endpoint)
         # Get the endpoint from the endpoints map
@@ -78,7 +78,8 @@ class FamilySafetyAPI:
         async with self._session.request(
             method=e_point.get("method"),
             url=url,
-            json=body
+            json=body,
+            headers=headers
         ) as response:
             _LOGGER.debug("Request to %s status code %s", url, response.status)
             if _check_http_success(response.status):

@@ -86,7 +86,8 @@ class Account:
     async def get_screentime_usage(self,
                                    start_time: datetime = None,
                                    end_time: datetime = None,
-                                   device_count = 4) -> dict:
+                                   device_count = 4,
+                                   platform: str = "ALL") -> dict:
         """Returns screentime usage for the account."""
         default = False
         if start_time is None:
@@ -94,10 +95,13 @@ class Account:
             start_time = datetime.combine(date.today(), time(0,0,0))
         if end_time is None:
             default = True
-            end_time = start_time + timedelta(hours=24)
+            end_time = datetime.combine(date.today(), time(23,59,59))
 
         device_usage = await self._api.send_request(
                 endpoint="get_user_device_screentime_usage",
+                headers={
+                    "Plat-Info": platform
+                },
                 USER_ID=self.user_id,
                 BEGIN_TIME=start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 END_TIME=end_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -106,6 +110,9 @@ class Account:
 
         application_usage = await self._api.send_request(
                 endpoint="get_user_app_screentime_usage",
+                headers={
+                    "Plat-Info": platform
+                },
                 USER_ID=self.user_id,
                 BEGIN_TIME=start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 END_TIME=end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
