@@ -12,7 +12,7 @@ async def main():
     login = True
     while login:
         try:
-            auth = await FamilySafety.create(token=input("Response URL: "), use_refresh_token=True)
+            auth = await FamilySafety.create(token=input("Response URL: "), use_refresh_token=False)
             _LOGGER.info("Logged in, ready.")
             _LOGGER.debug("Access token is: %s", auth.api.authenticator.refresh_token)
             login = False

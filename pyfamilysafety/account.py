@@ -2,12 +2,14 @@
 """Family safety account handler."""
 
 import logging
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, time
+from urllib.parse import quote_plus
 
 from .api import FamilySafetyAPI
 from .device import Device
 from .application import Application
 from .enum import OverrideTarget, OverrideType
+from .helpers import localise_datetime, API_TIMEZONE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,10 +94,10 @@ class Account:
         default = False
         if start_time is None:
             default = True
-            start_time = datetime.combine(date.today(), time(0,0,0))
+            start_time = localise_datetime(datetime.combine(date.today(), time(0,0,0), tzinfo=API_TIMEZONE))
         if end_time is None:
             default = True
-            end_time = datetime.combine(date.today(), time(23,59,59))
+            end_time = localise_datetime(datetime.combine(date.today(), time(23,59,59), tzinfo=API_TIMEZONE))
 
         device_usage = await self._api.send_request(
                 endpoint="get_user_device_screentime_usage",
@@ -103,8 +105,8 @@ class Account:
                     "Plat-Info": platform
                 },
                 USER_ID=self.user_id,
-                BEGIN_TIME=start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                END_TIME=end_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                BEGIN_TIME=quote_plus(start_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
+                END_TIME=quote_plus(end_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
                 DEVICE_COUNT=device_count
             )
 
@@ -114,8 +116,8 @@ class Account:
                     "Plat-Info": platform
                 },
                 USER_ID=self.user_id,
-                BEGIN_TIME=start_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                END_TIME=end_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+                BEGIN_TIME=quote_plus(start_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
+                END_TIME=quote_plus(end_time.strftime('%Y-%m-%dT%H:%M:%S%z'))
             )
 
         if default:

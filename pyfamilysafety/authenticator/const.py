@@ -1,7 +1,7 @@
 # pylint: disable=line-too-long
 """Authenticator constants"""
 
-CLIENT_ID = "dce5010f-c52d-4353-ae86-d666373528d8"
+CLIENT_ID = "000000000004893A"
 SCOPE = "service::familymobile.microsoft.com::MBI_SSL"
 
 BASE_URL = "https://login.live.com/"
