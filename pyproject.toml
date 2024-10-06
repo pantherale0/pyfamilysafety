@@ -1,5 +1,7 @@
-[build-system]
-requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
-build-backend = "setuptools.build_meta"
+[tool.black]
+preview = true
+line-length = 120
+skip-string-normalization = true
 
-[tool.setuptools_scm]
+[tool.isort]
+profile = "black"
