@@ -2,7 +2,7 @@
 """Family safety account handler."""
 
 import logging
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, time
 from urllib.parse import quote_plus
 
 from .api import FamilySafetyAPI
@@ -10,7 +10,6 @@ from .device import Device
 from .application import Application
 from .enum import OverrideTarget, OverrideType
 from .helpers import localise_datetime, API_TIMEZONE
-from .requests import PendingRequest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -152,8 +151,8 @@ class Account:
         response = await self._api.send_request(
             endpoint="override_device_restriction",
             body={
-                "overrideType": str(override).upper(),
-                "target": str(target).upper(),
+                "overrideType": str(override),
+                "target": str(target),
                 "validUntil": valid_until.strftime("%Y-%m-%dT%H:%M:%SZ")
             },
             USER_ID=self.user_id
