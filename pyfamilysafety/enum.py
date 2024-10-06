@@ -7,11 +7,8 @@ class OverrideTarget(Enum):
     WINDOWS = 0
     XBOX = 1
     MOBILE = 2
-    ALL_DEVICES = 4
 
     def __str__(self) -> str:
-        if self.name == "ALL_DEVICES":
-            return "AllDevices"
         if self.name == "WINDOWS":
             return "Windows"
         if self.name == "MOBILE":
@@ -23,8 +20,6 @@ class OverrideTarget(Enum):
     @classmethod
     def from_pretty(cls, pretty) -> 'OverrideTarget':
         """Returns from pretty."""
-        if pretty == "AllDevices":
-            return cls.ALL_DEVICES
         if pretty == "Windows":
             return cls.WINDOWS
         if pretty == "Mobile":

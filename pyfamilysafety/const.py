@@ -32,6 +32,10 @@ ENDPOINTS = {
         "url": "{BASE_URL}/v4/activityreport/deviceScreenTimeUsage/{USER_ID}?beginTime={BEGIN_TIME}&endTime={END_TIME}&topDeviceCount={DEVICE_COUNT}",
         "method": "GET"
     },
+    "update_schedule": {
+        "url": "{BASE_URL}/v4/devicelimits/schedules/{USER_ID}",
+        "method": "PATCH"
+    },
     "get_user_devices": {
         "url": "{BASE_URL}/v1/devices/{USER_ID}",
         "method": "GET"
@@ -87,17 +91,5 @@ ENDPOINTS = {
     "get_additional_permission_token": {
         "url": "{BASE_URL}/v1/FamilyPermission/permissiontoken/{USER_ID}?scopes={SCOPES}",
         "method": "GET"
-    },
-    "get_named_locations": {
-        "url": "{BASE_URL}/v1/namedlocation",
-        "method": "GET"
-    },
-    "add_named_location": {
-        "url": "{BASE_URL}/v1/namedlocation",
-        "method": "POST"
-    },
-    "delete_named_location": {
-        "url": "{BASE_URL}/v1/namedlocation/{LOCATION_ID}",
-        "method": "DELETE"
     }
 }

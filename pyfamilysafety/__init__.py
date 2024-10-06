@@ -14,15 +14,20 @@ class FamilySafety:
     def __init__(self, api) -> None:
         self.api: FamilySafetyAPI = api
         self.accounts: list[Account] = None
+        self.experimental: bool = False
         self.pending_requests = []
 
     @classmethod
-    async def create(cls, token, use_refresh_token: bool=False) -> 'FamilySafety':
+    async def create(cls, token,
+                     use_refresh_token: bool=False,
+                     experimental: bool=False) -> 'FamilySafety':
         """Create an instance of the family safety module."""
         self = cls(await FamilySafetyAPI.create(token, use_refresh_token))
         accounts = await self.api.send_request("get_accounts")
-        self.accounts = await Account.from_dict(self.api, accounts.get("json"))
-        await self._get_pending_requests()
+        self.accounts = await Account.from_dict(self.api, accounts.get("json"), experimental)
+        self.experimental = experimental
+        if experimental:
+            await self._get_pending_requests()
         return self
 
     def get_account(self, user_id) -> Account:
@@ -99,7 +104,8 @@ class FamilySafety:
     async def update(self):
         """Updates submodules"""
         try:
-            await self._get_pending_requests()
+            if self.experimental:
+                await self._get_pending_requests()
             for account in self.accounts:
                 await account.update()
         except AggregatorException:

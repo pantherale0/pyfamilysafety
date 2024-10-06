@@ -3,7 +3,9 @@
 
 import logging
 import asyncio
+from datetime import datetime, timedelta
 from pyfamilysafety import FamilySafety
+from pyfamilysafety.enum import OverrideType
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -12,7 +14,7 @@ async def main():
     login = True
     while login:
         try:
-            auth = await FamilySafety.create(token=input("Response URL: "), use_refresh_token=False)
+            auth = await FamilySafety.create(token=input("Response URL: "), use_refresh_token=False, experimental=True)
             _LOGGER.info("Logged in, ready.")
             _LOGGER.debug("Access token is: %s", auth.api.authenticator.refresh_token)
             login = False
@@ -24,6 +26,7 @@ async def main():
             _LOGGER.debug("Discovered account %s, label %s", account.user_id, account.first_name)
             _LOGGER.debug(account)
             _LOGGER.debug("Usage today %s", account.today_screentime_usage)
+            await account.override_device("AllDevices", OverrideType.UNTIL, valid_until=datetime.now()+timedelta(days=5))
 
         _LOGGER.debug("ping")
         await asyncio.sleep(15)

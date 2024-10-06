@@ -2,7 +2,7 @@
 """Family safety account handler."""
 
 import logging
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from urllib.parse import quote_plus
 
 from .api import FamilySafetyAPI
@@ -10,6 +10,7 @@ from .device import Device
 from .application import Application
 from .enum import OverrideTarget, OverrideType
 from .helpers import localise_datetime, API_TIMEZONE
+from .requests import PendingRequest
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class Account:
         self.screentime_usage: dict = None
         self.application_usage: dict = None
         self.blocked_platforms: list[OverrideTarget] = None
+        self.experimental: bool = False
         self._api: FamilySafetyAPI = api
         self.account_balance: float = 0.0
         self.account_currency: str = ""
@@ -81,9 +83,6 @@ class Account:
         if len(balances) == 1:
             self.account_balance = balances[0]["balance"]
             self.account_currency = balances[0]["currency"]
-            return
-        _LOGGER.warning("Unknown account spending response, please report to developer. %s", response)
-        return
 
     async def get_screentime_usage(self,
                                    start_time: datetime = None,
@@ -153,8 +152,8 @@ class Account:
         response = await self._api.send_request(
             endpoint="override_device_restriction",
             body={
-                "overrideType": str(override),
-                "target": str(target),
+                "overrideType": str(override).upper(),
+                "target": str(target).upper(),
                 "validUntil": valid_until.strftime("%Y-%m-%dT%H:%M:%SZ")
             },
             USER_ID=self.user_id
@@ -179,7 +178,7 @@ class Account:
         self.blocked_platforms = blocked_platforms
 
     @classmethod
-    async def from_dict(cls, api: FamilySafetyAPI, raw_response: dict) -> list['Account']:
+    async def from_dict(cls, api: FamilySafetyAPI, raw_response: dict, experimental: bool) -> list['Account']:
         """Converts a roster request response to an array."""
         response = []
         if "members" in raw_response.keys():
@@ -192,6 +191,7 @@ class Account:
                     self.profile_picture = member.get("profilePicUrl")
                     self.first_name = member.get("user").get("firstName")
                     self.surname = member.get("user").get("lastName")
+                    self.experimental = experimental
                     await self.update()
                     response.append(self)
 

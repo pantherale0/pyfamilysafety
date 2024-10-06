@@ -8,7 +8,7 @@ import aiohttp
 import aiohttp.client_exceptions
 
 from .authenticator import Authenticator
-from .const import ENDPOINTS, BASE_URL, AGGREGATOR_ERROR
+from .const import ENDPOINTS, BASE_URL, AGGREGATOR_ERROR, USER_AGENT
 from .exceptions import HttpException, AggregatorException, Unauthorized, RequestDenied
 
 _LOGGER = logging.getLogger(__name__)
@@ -65,8 +65,19 @@ class FamilySafetyAPI:
         if self._session.headers.get("Authorization", None) is None:
             # Add the auth token
             self._session.headers.add("Authorization", self._auth_token)
+        # add headers to override
+        if headers is None:
+            headers = {}
+            headers["Authorization"] = self._auth_token
+            headers["User-Agent"] = USER_AGENT
+            headers["Content-Type"] = "application/json"
+
         # format the URL using the kwargs
-        url = e_point.get("url").format(BASE_URL=BASE_URL, **kwargs)
+        url = e_point.get("url")
+        if "{BASE_URL" in url:
+            url = url.format(BASE_URL=BASE_URL, **kwargs)
+        else:
+            url = url.format(**kwargs)
         _LOGGER.debug("Built URL %s", url)
         # now send the HTTP request
         resp: dict = {
