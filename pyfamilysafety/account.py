@@ -1,6 +1,7 @@
 # pylint: disable=line-too-long
 """Family safety account handler."""
 
+import asyncio
 import logging
 from datetime import datetime, date, time
 from urllib.parse import quote_plus
@@ -38,10 +39,8 @@ class Account:
     async def update(self) -> None:
         """Update all account details."""
         await self.get_screentime_usage()
-        await self._get_devices()
-        await self._get_overrides()
-        await self._get_applications()
-        await self._get_account_balance()
+        coros = [self._get_devices(), self._get_overrides(), self._get_applications(), self._get_account_balance()]
+        await asyncio.gather(*coros)
 
     async def _get_devices(self) -> list[Device]:
         """Returns all devices on the account."""

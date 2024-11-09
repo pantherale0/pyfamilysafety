@@ -1,5 +1,6 @@
 """The core MSFT family safety API"""
 
+import asyncio
 import logging
 
 from .api import FamilySafetyAPI
@@ -104,9 +105,11 @@ class FamilySafety:
     async def update(self):
         """Updates submodules"""
         try:
+            coros = []
             if self.experimental:
-                await self._get_pending_requests()
+                coros.append(self._get_pending_requests())
             for account in self.accounts:
-                await account.update()
+                coros.append(account.update())
+            await asyncio.gather(*coros)
         except AggregatorException:
             _LOGGER.warning("Aggregator exception occured, ignoring this update request.")
