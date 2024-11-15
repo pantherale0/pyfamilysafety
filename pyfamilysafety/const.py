@@ -77,7 +77,7 @@ ENDPOINTS = {
         "method": "POST"
     },
     "set_app_policy": {
-        "url": "{BASE_URL}/v2/appLimits/policies/{USER_ID}/{APP_ID}",
+        "url": "{BASE_URL}/v3/appLimits/policies/{USER_ID}/{APP_ID}",
         "method": "PATCH"
     },
     "update_web_restrictions": {
