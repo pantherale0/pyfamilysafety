@@ -40,7 +40,7 @@ class FamilySafetyAPI:
         """Ends the active session, this method should be called before GC."""
         await self._session.close()
 
-    async def send_request(self, endpoint: str, body: object=None, headers: dict=None, **kwargs):
+    async def send_request(self, endpoint: str, body: object=None, headers: dict=None, platform: str=None, **kwargs):
         """Sends a request to a given endpoint."""
         _LOGGER.debug("Sending request to %s", endpoint)
         # Get the endpoint from the endpoints map
@@ -71,6 +71,8 @@ class FamilySafetyAPI:
             headers["Authorization"] = self._auth_token
             headers["User-Agent"] = USER_AGENT
             headers["Content-Type"] = "application/json"
+        if platform is not None:
+            headers["Plat-Info"] = platform
 
         # format the URL using the kwargs
         url = e_point.get("url")

@@ -26,6 +26,11 @@ async def main():
             _LOGGER.debug("Discovered account %s, label %s", account.user_id, account.first_name)
             _LOGGER.debug(account)
             _LOGGER.debug("Usage today %s", account.today_screentime_usage)
+            for app in account.applications:
+                await app.block_app()
+                await asyncio.sleep(15)
+                await app.unblock_app()
+                break
             await account.override_device("Xbox", OverrideType.CANCEL)
 
         _LOGGER.debug("ping")

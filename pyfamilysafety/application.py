@@ -2,6 +2,16 @@
 
 from .api import FamilySafetyAPI
 
+def get_platform(app_id: str):
+    """Return platform identifier."""
+    if app_id.startswith("x:"):
+        return "XBOX"
+    if app_id.startswith("appx:"):
+        return "WINDOWS"
+    ### This needs validating
+    if app_id.startswith("a:"):
+        return "MOBILE"
+
 class Application:
     """Application."""
 
@@ -37,7 +47,8 @@ class Application:
                 "enabled": True
             },
             USER_ID=self._user_id,
-            APP_ID=self.app_id
+            APP_ID=self.app_id,
+            platform=get_platform(self.app_id)
         )
         self.blocked = True
 
@@ -54,7 +65,8 @@ class Application:
                 "enabled": True
             },
             USER_ID=self._user_id,
-            APP_ID=self.app_id
+            APP_ID=self.app_id,
+            platform=get_platform(self.app_id)
         )
         self.blocked = False
 
