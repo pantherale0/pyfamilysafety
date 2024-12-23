@@ -88,7 +88,7 @@ class Authenticator:
         """Performs login from the username and password."""
         if self._login_lock.locked():
             while self._login_lock.locked():
-                asyncio.sleep(2)
+                await asyncio.sleep(2)
             return
         async with self._login_lock:
             _LOGGER.debug(">> Performing authenticator login")
@@ -116,7 +116,7 @@ class Authenticator:
         """Refresh the token."""
         if self._login_lock.locked():
             while self._login_lock.locked():
-                asyncio.sleep(2)
+                await asyncio.sleep(2)
             return
         async with self._login_lock:
             _LOGGER.debug(">> Performing authenticator refresh")
