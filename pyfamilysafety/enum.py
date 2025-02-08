@@ -4,13 +4,13 @@ from enum import Enum
 
 class OverrideTarget(Enum):
     """A list of targets to override the lock state."""
-    WINDOWS = 0
+    DESKTOP = 0
     XBOX = 1
     MOBILE = 2
 
     def __str__(self) -> str:
-        if self.name == "WINDOWS":
-            return "Windows"
+        if self.name == "DESKTOP":
+            return "Desktop"
         if self.name == "MOBILE":
             return "Mobile"
         if self.name == "XBOX":
@@ -20,8 +20,8 @@ class OverrideTarget(Enum):
     @classmethod
     def from_pretty(cls, pretty) -> 'OverrideTarget':
         """Returns from pretty."""
-        if pretty == "Windows":
-            return cls.WINDOWS
+        if pretty == "Desktop":
+            return cls.DESKTOP
         if pretty == "Mobile":
             return cls.MOBILE
         if pretty == "Xbox":
