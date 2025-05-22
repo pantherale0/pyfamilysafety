@@ -11,6 +11,7 @@ from .device import Device
 from .application import Application
 from .enum import OverrideTarget, OverrideType
 from .helpers import localise_datetime, API_TIMEZONE
+from .utils import is_awaitable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,24 +36,43 @@ class Account:
         self._api: FamilySafetyAPI = api
         self.account_balance: float = 0.0
         self.account_currency: str = ""
+        self._account_callbacks: list = []
+
+    def add_account_callback(self, callback):
+        """Add a callback to the account."""
+        if not callable(callback):
+            raise ValueError("Object must be callable.")
+        if callback not in self._account_callbacks:
+            self._account_callbacks.append(callback)
+
+    def remove_account_callback(self, callback):
+        """Remove a given account callback."""
+        if not callable(callback):
+            raise ValueError("Object must be callable.")
+        if callback in self._account_callbacks:
+            self._account_callbacks.remove(callback)
 
     async def update(self) -> None:
         """Update all account details."""
         await self.get_screentime_usage()
         coros = [self._get_devices(), self._get_overrides(), self._get_applications(), self._get_account_balance()]
         await asyncio.gather(*coros)
+        for cb in self._account_callbacks:
+            if is_awaitable(cb):
+                await cb()
+            else:
+                cb()
 
     async def _get_devices(self) -> list[Device]:
         """Returns all devices on the account."""
-        response = await self._api.send_request("get_user_devices", USER_ID=self.user_id)
+        response = await self._api.async_get_user_devices(user_id=self.user_id)
         self.devices = Device.from_dict(response.get("json"), self.screentime_usage)
         return self.devices
 
     async def _get_overrides(self):
         """Collects overrides."""
-        response = await self._api.send_request(
-            endpoint="get_override_device_restrictions",
-            USER_ID=self.user_id)
+        response = await self._api.async_get_override_device_restrictions(
+            user_id=self.user_id)
         self._update_device_blocked(response.get("json"))
 
     async def _get_applications(self) -> list[Application]:
@@ -72,9 +92,8 @@ class Account:
 
     async def _get_account_balance(self):
         """Updates the account balance."""
-        response = await self._api.send_request(
-            endpoint="get_user_spending",
-            USER_ID=self.user_id
+        response = await self._api.async_get_user_spending(
+            user_id=self.user_id
         )
         response = response["json"]
         balances = response.get("balances", [])
@@ -96,25 +115,19 @@ class Account:
             default = True
             end_time = localise_datetime(datetime.combine(date.today(), time(23,59,59), tzinfo=API_TIMEZONE))
 
-        device_usage = await self._api.send_request(
-                endpoint="get_user_device_screentime_usage",
-                headers={
-                    "Plat-Info": platform
-                },
-                USER_ID=self.user_id,
-                BEGIN_TIME=quote_plus(start_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
-                END_TIME=quote_plus(end_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
-                DEVICE_COUNT=device_count
+        device_usage = await self._api.async_get_user_device_screentime_usage(
+                user_id=self.user_id,
+                begin_time=quote_plus(start_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
+                end_time=quote_plus(end_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
+                device_count=device_count,
+                platform=platform
             )
 
-        application_usage = await self._api.send_request(
-                endpoint="get_user_app_screentime_usage",
-                headers={
-                    "Plat-Info": platform
-                },
-                USER_ID=self.user_id,
-                BEGIN_TIME=quote_plus(start_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
-                END_TIME=quote_plus(end_time.strftime('%Y-%m-%dT%H:%M:%S%z'))
+        application_usage = await self._api.async_get_user_app_screentime_usage(
+                user_id=self.user_id,
+                begin_time=quote_plus(start_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
+                end_time=quote_plus(end_time.strftime('%Y-%m-%dT%H:%M:%S%z')),
+                platform=platform
             )
 
         if default:
@@ -147,14 +160,13 @@ class Account:
             raise ValueError("valid_until is required if using OverrideType.UNTIL")
         if override == OverrideType.CANCEL:
             valid_until = datetime.now()
-        response = await self._api.send_request(
-            endpoint="override_device_restriction",
+        response = await self._api.async_override_device_restriction(
+            user_id=self.user_id,
             body={
                 "overrideType": str(override),
                 "target": str(target),
                 "validUntil": valid_until.strftime("%Y-%m-%dT%H:%M:%SZ")
-            },
-            USER_ID=self.user_id
+            }
         )
         self._update_device_blocked(response.get("json"))
 

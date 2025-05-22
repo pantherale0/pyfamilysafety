@@ -3,9 +3,7 @@
 
 import logging
 import asyncio
-from datetime import datetime, timedelta
-from pyfamilysafety import FamilySafety
-from pyfamilysafety.enum import OverrideType
+from pyfamilysafety import FamilySafety, Authenticator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -14,29 +12,25 @@ async def main():
     login = True
     while login:
         try:
-            auth = await FamilySafety.create(token=input("Response URL: "), use_refresh_token=False, experimental=True)
+            auth = await Authenticator.create(token=input("Response URL: "))
             _LOGGER.info("Logged in, ready.")
-            _LOGGER.debug("Access token is: %s", auth.api.authenticator.refresh_token)
+            _LOGGER.debug("Access token is: %s", auth.refresh_token)
             login = False
+            family_safety = FamilySafety(auth)
+            await family_safety.update()
         except Exception as err:
             _LOGGER.critical(err)
 
     while True:
-        for account in auth.accounts:
+        for account in family_safety.accounts:
             _LOGGER.debug("Discovered account %s, label %s", account.user_id, account.first_name)
             _LOGGER.debug(account)
             _LOGGER.debug("Usage today %s", account.today_screentime_usage)
-            for app in account.applications:
-                await app.block_app()
-                await asyncio.sleep(15)
-                await app.unblock_app()
-                break
-            await account.override_device("Xbox", OverrideType.CANCEL)
 
         _LOGGER.debug("ping")
         await asyncio.sleep(15)
         _LOGGER.debug("pong")
-        await auth.update()
+        await family_safety.update()
 
 if __name__ == "__main__":
     logging.basicConfig(

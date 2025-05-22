@@ -14,7 +14,8 @@ with open('pyfamilysafety/_version.py', 'r', encoding='utf8') as version_file:
         raise RuntimeError('Unable to find version string!')
 
 REQUIREMENTS = [
-    "aiohttp >= 3.7.0"
+    "aiohttp >= 3.7.0",
+    "python-dateutil >= 2.7.0"
 ]
 
 DEV_REQUIREMENTS = [

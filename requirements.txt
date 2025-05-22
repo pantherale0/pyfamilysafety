@@ -3,3 +3,4 @@
 # process, which may cause wedges in the gate later.
 
 aiohttp>=3.7.0
+python-dateutil>=2.7.0
