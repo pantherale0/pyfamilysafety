@@ -6,4 +6,4 @@ __pycache__
 *.lcov
 dist
 htmlcov
-venv
+.venv
