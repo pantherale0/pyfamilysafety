@@ -2,9 +2,10 @@
 """Microsoft authentication handler."""
 
 import logging
-import re
 import asyncio
 from datetime import datetime, timedelta
+
+from urllib.parse import urlparse
 
 import aiohttp
 from pyfamilysafety.exceptions import Unauthorized
@@ -13,49 +14,73 @@ from .const import (
     TOKEN_ENDPOINT,
     USER_AGENT,
     REDIRECT_URL,
-    REDIR_REGEXP,
     CLIENT_ID,
     SCOPE
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-def _parse_redirect_url(redirect_url: str) -> dict:
-    """Parses the received redirect token."""
-    matches = re.findall(REDIR_REGEXP, redirect_url)
-    if len(matches) == 1:
-        return {
-            "code": matches[0][0],
-            "lc": matches[0][1]
-        }
-    else:
-        raise ValueError("Invalid redirect_url provided.")
-
 class Authenticator:
     """The base authenticator class."""
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            client_session: aiohttp.ClientSession = None
+        ) -> None:
         """init the class."""
         _LOGGER.debug(">> Init authenticator.")
         self.expires: datetime = None
         self.refresh_token: str = None
-        self.access_token: str = None
+        self._access_token: str = None
         self.user_id: str = None
         self._ppft: str = None
         self._login_lock: asyncio.Lock = asyncio.Lock()
+        if client_session is None:
+            client_session = aiohttp.ClientSession()
+        self.client_session: aiohttp.ClientSession = client_session
+
+    @property
+    def access_token(self) -> str:
+        """Returns the access token."""
+        return f"MSAuth1.0 usertoken=\"{self._access_token}\", type=\"MSACT\""
+
+    @property
+    def access_token_expired(self) -> bool:
+        """Check if the access token has expired."""
+        return self.expires < (datetime.now()+timedelta(minutes=1))
 
     @classmethod
-    async def create(cls, token: str, use_refresh_token: bool=False) -> 'Authenticator':
+    async def create(
+        cls,
+        token: str,
+        use_refresh_token: bool=False,
+        client_session: aiohttp.ClientSession | None = None) -> 'Authenticator':
         """Creates and starts a Microsoft auth session without retaining the username and password."""
-        auth = cls()
+        auth = cls(client_session=client_session)
         if use_refresh_token:
             auth.refresh_token = token
             await auth.perform_refresh()
             return auth
         else:
-            redir_parsed = _parse_redirect_url(token)
+            redir_parsed = auth._parse_response_token(token)
             await auth.perform_login(redir_parsed["code"])
             return auth
+
+    def _parse_response_token(self, redirect_url: str) -> dict:
+        """Parses a redirect_url."""
+        _LOGGER.debug(">> Parsing redirect_url.")
+        try:
+            url = urlparse(redirect_url)
+            params = url.query.split('&')
+            response = {}
+            for param in params:
+                response = {
+                    **response,
+                    param.split('=')[0]: param.split('=')[1]
+                }
+            return response
+        except Exception as exc:
+            raise ValueError("Invalid URL provided.") from exc
 
     async def _request_handler(self, method, url, body=None, headers=None, data=None):
         """Send a HTTP request"""
@@ -65,23 +90,24 @@ class Authenticator:
             "json": "",
             "headers": ""
         }
-        async with aiohttp.ClientSession() as session:
-            session.headers.add("user-agent", USER_AGENT)
-            session.headers.add("X-Requested-With", "com.microsoft.familysafety")
-            if headers:
-                for k in headers:
-                    session.headers.add(k, headers[k])
-            async with session.request(
-                method=method,
-                url=url,
-                json=body,
-                headers=headers,
-                data=data
-            ) as resp:
-                response["status"] = resp.status
-                response["text"] = await resp.text()
-                response["json"] = await resp.json()
-                response["headers"] = resp.headers
+        if not headers:
+            headers = {}
+        headers = {
+            **headers,
+            "user-agent": USER_AGENT,
+            "X-Requested-With": "com.microsoft.familysafety"
+        }
+        async with self.client_session.request(
+            method=method,
+            url=url,
+            json=body,
+            headers=headers,
+            data=data
+        ) as resp:
+            response["status"] = resp.status
+            response["text"] = await resp.text()
+            response["json"] = await resp.json()
+            response["headers"] = resp.headers
         return response
 
     async def perform_login(self, auth_code):
@@ -105,7 +131,7 @@ class Authenticator:
             )
             _LOGGER.debug(">> Token request response %s", tokens["status"])
             if tokens["status"] == 200:
-                self.access_token = tokens["json"]["access_token"]
+                self._access_token = tokens["json"]["access_token"]
                 self.expires = datetime.now() + timedelta(seconds=tokens["json"]["expires_in"])
                 self.refresh_token = tokens["json"]["refresh_token"]
                 self.user_id = tokens["json"]["user_id"]

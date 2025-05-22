@@ -3,33 +3,24 @@
 import asyncio
 import logging
 
+from .authenticator import Authenticator
 from .api import FamilySafetyAPI
 from .account import Account
 from .exceptions import AggregatorException
+from .utils import is_awaitable
 
 _LOGGER = logging.getLogger(__name__)
 
 class FamilySafety:
     """The core family safety module."""
 
-    def __init__(self, api) -> None:
-        self.api: FamilySafetyAPI = api
-        self.accounts: list[Account] = None
+    def __init__(self, auth: Authenticator) -> None:
+        """Initialize the family safety module."""
+        self._api: FamilySafetyAPI = FamilySafetyAPI(auth=auth)
+        self.accounts: list[Account] = []
         self.experimental: bool = False
         self.pending_requests = []
-
-    @classmethod
-    async def create(cls, token,
-                     use_refresh_token: bool=False,
-                     experimental: bool=False) -> 'FamilySafety':
-        """Create an instance of the family safety module."""
-        self = cls(await FamilySafetyAPI.create(token, use_refresh_token))
-        accounts = await self.api.send_request("get_accounts")
-        self.accounts = await Account.from_dict(self.api, accounts.get("json"), experimental)
-        self.experimental = experimental
-        if experimental:
-            await self._get_pending_requests()
-        return self
+        self._pending_request_callbacks = []
 
     def get_account(self, user_id) -> Account:
         """Returns an account for the given ID."""
@@ -46,34 +37,42 @@ class FamilySafety:
         """Returns all pending requests for a given account."""
         return [x for x in self.pending_requests if x["puid"] == user_id]
 
+    def add_pending_request_callback(self, callback):
+        """Add a callback to the pending request."""
+        if not callable(callback):
+            raise ValueError("Object must be callable.")
+        if callback not in self._pending_request_callbacks:
+            self._pending_request_callbacks.append(callback)
+
+    def remove_pending_request_callback(self, callback):
+        """Remove a given pending request callback."""
+        if not callable(callback):
+            raise ValueError("Object must be callable.")
+        if callback in self._pending_request_callbacks:
+            self._pending_request_callbacks.remove(callback)
+
     async def _get_pending_requests(self):
         """Returns pending requests on the account."""
-        response = await self.api.send_request("get_pending_requests")
+        response = await self._api.send_request("get_pending_requests")
         self.pending_requests = response.get("json").get("pendingRequests", [])
         # restrict pending requests to only screentime, other types not supported yet
         self.pending_requests = [
             x for x in self.pending_requests if x["type"] == "DeviceScreenTime"]
+        for cb in self._pending_request_callbacks:
+            if is_awaitable(cb):
+                await cb()
+            else:
+                cb()
         return self.pending_requests
 
     async def approve_pending_request(self, request_id, extension_time) -> bool:
         """Approves a pending request and grants an extension in seconds."""
         extension_time = extension_time*100 # convert seconds to ms
         request = self.get_request(request_id)
-        response = await self.api.send_request(
-            endpoint="approve_pending_request",
-            body={
-                "id": request.get("id"),
-                "request": {
-                    "appId": request.get("id"),
-                    "extension": extension_time,
-                    "isGlobal": True,
-                    "lockTime": request.get("lockTime"),
-                    "platform": request.get("platform"),
-                    "requestedTime": request.get("requestedTime")
-                },
-                "type": request.get("type")
-            },
-            USER_ID=request["puid"]
+        response = await self._api.async_process_pending_request(
+            request,
+            True,
+            extension_time
         )
 
         await self._get_pending_requests()
@@ -82,29 +81,23 @@ class FamilySafety:
     async def deny_pending_request(self, request_id) -> bool:
         """Deny a pending request."""
         request = self.get_request(request_id)
-        response = await self.api.send_request(
-            endpoint="deny_pending_request",
-            body={
-                "id": request.get("id"),
-                "request": {
-                    "appId": request.get("id"),
-                    "extension": 0,
-                    "isGlobal": True,
-                    "lockTime": request.get("lockTime"),
-                    "platform": request.get("platform"),
-                    "requestedTime": request.get("requestedTime")
-                },
-                "type": request.get("type")
-            },
-            USER_ID=request["puid"]
+        response = await self._api.async_process_pending_request(
+            request,
+            False
         )
-
         await self._get_pending_requests()
         return response["status"] == 204
 
     async def update(self):
         """Updates submodules"""
         try:
+            if len(self.accounts) == 0:
+                data = await self._api.send_request("get_accounts")
+                self.accounts = await Account.from_dict(
+                    self._api,
+                    data,
+                    self.experimental
+                )
             coros = []
             if self.experimental:
                 coros.append(self._get_pending_requests())

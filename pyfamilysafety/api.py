@@ -2,7 +2,6 @@
 """pyfamilysafety API request handler."""
 
 import logging
-from datetime import datetime
 
 import aiohttp
 import aiohttp.client_exceptions
@@ -19,26 +18,10 @@ def _check_http_success(status: int) -> bool:
 class FamilySafetyAPI:
     """The API."""
 
-    def __init__(self) -> None:
+    def __init__(self, auth: Authenticator) -> None:
         """Init API."""
-        self.authenticator: Authenticator = None
-        self._session: aiohttp.ClientSession = aiohttp.ClientSession()
-
-    @classmethod
-    async def create(cls, token: str, use_refresh_token: bool=False) -> 'FamilySafetyAPI':
-        """Create an instance of the base API handler library."""
-        self = cls()
-        self.authenticator = await Authenticator.create(token, use_refresh_token)
-        return self
-
-    @property
-    def _auth_token(self) -> str:
-        """Returns the auth token."""
-        return f"MSAuth1.0 usertoken=\"{self.authenticator.access_token}\", type=\"MSACT\""
-
-    async def end_session(self):
-        """Ends the active session, this method should be called before GC."""
-        await self._session.close()
+        self._auth: Authenticator = auth
+        self.pending_requests = []
 
     async def send_request(self, endpoint: str, body: object=None, headers: dict=None, platform: str=None, **kwargs):
         """Sends a request to a given endpoint."""
@@ -48,27 +31,14 @@ class FamilySafetyAPI:
         if e_point is None:
             raise ValueError("Endpoint does not exist")
         # refresh the token if it has expired.
-        if self.authenticator.expires is not None:
-            if self.authenticator.expires < datetime.now():
-                _LOGGER.debug("Token refresh required before continuing")
-                await self.authenticator.perform_refresh()
-                self._session.headers.pop("Authorization")
+        if self._auth.access_token_expired:
+            _LOGGER.debug("Token refresh required before continuing")
+            await self._auth.perform_refresh()
 
-        if self.authenticator.expires is None:
-            _LOGGER.warning("Missing expiration of access token in authenticator, attempting to refresh anyway.")
-            await self.authenticator.perform_refresh()
-            try:
-                self._session.headers.pop("Authorization")
-            except KeyError:
-                pass
-
-        if self._session.headers.get("Authorization", None) is None:
-            # Add the auth token
-            self._session.headers.add("Authorization", self._auth_token)
         # add headers to override
         if headers is None:
             headers = {}
-            headers["Authorization"] = self._auth_token
+            headers["Authorization"] = self._auth.access_token
             headers["User-Agent"] = USER_AGENT
             headers["Content-Type"] = "application/json"
         if platform is not None:
@@ -88,7 +58,7 @@ class FamilySafetyAPI:
             "json": "",
             "headers": ""
         }
-        async with self._session.request(
+        async with self._auth.client_session.request(
             method=e_point.get("method"),
             url=url,
             json=body,
@@ -117,3 +87,124 @@ class FamilySafetyAPI:
 
         # now return the resp dict
         return resp
+
+    async def async_get_accounts(self):
+        """Retrieve data from endpoint get_accounts."""
+        return await self.send_request("get_accounts")
+
+    async def async_get_pending_requests(self):
+        """Retrieve data from endpoint get_pending_requests."""
+        return await self.send_request("get_pending_requests")
+
+    async def async_get_premium_entitlement(self):
+        """Retrieve data from endpoint get_premium_entitlement."""
+        return await self.send_request("get_premium_entitlement")
+
+    async def async_get_user_app_screentime_usage(
+            self,
+            user_id,
+            begin_time,
+            end_time,
+            platform
+        ):
+        """Retrieve data from endpoint get_user_app_screentime_usage."""
+        return await self.send_request(
+            "get_user_app_screentime_usage",
+            headers={
+                "Plat-Info": platform
+            },
+            USER_ID=user_id,
+            BEGIN_TIME=begin_time,
+            END_TIME=end_time
+        )
+
+    async def async_get_user_device_screentime_usage(
+            self,
+            user_id,
+            begin_time,
+            end_time,
+            device_count,
+            platform
+        ):
+        """Retrieve data from endpoint get_user_device_screentime_usage."""
+        return await self.send_request(
+            "get_user_device_screentime_usage",
+            headers={
+                "Plat-Info": platform
+            },
+            USER_ID=user_id,
+            BEGIN_TIME=begin_time,
+            END_TIME=end_time,
+            DEVICE_COUNT=device_count,
+        )
+
+    async def async_get_user_devices(self, user_id):
+        """Retrieve data from endpoint get_user_devices."""
+        return await self.send_request("get_user_devices", USER_ID=user_id)
+
+    async def async_get_user_spending(self, user_id):
+        """Retrieve data from endpoint get_user_spending."""
+        return await self.send_request("get_user_spending", USER_ID=user_id)
+
+    async def async_get_user_payment_methods(self, user_id, cid):
+        """Retrieve data from endpoint get_user_payment_methods."""
+        return await self.send_request("get_user_payment_methods", USER_ID=user_id, CID=cid)
+
+    async def async_get_user_content_restrictions(self, user_id):
+        """Retrieve data from endpoint get_user_content_restrictions."""
+        return await self.send_request("get_user_content_restrictions", USER_ID=user_id)
+
+    async def async_get_override_device_restrictions(self, user_id):
+        """Send a GET request to override device restrictions."""
+        return await self.send_request("get_override_device_restrictions", USER_ID=user_id)
+
+    async def async_process_pending_request(
+            self,
+            request: dict,
+            approved: bool,
+            extension_time: int=0
+    ):
+        """Process a pending request using the deny and approve pending request method"""
+        if approved:
+            return await self.async_approve_pending_request(
+                body={
+                    "id": request.get("id"),
+                    "request": {
+                        "appId": request.get("id"),
+                        "extension": extension_time,
+                        "isGlobal": True,
+                        "lockTime": request.get("lockTime"),
+                        "platform": request.get("platform"),
+                        "requestedTime": request.get("requestedTime")
+                    },
+                    "type": request.get("type")
+                },
+                user_id=request["puid"]
+            )
+        return await self.async_deny_pending_request(
+            body={
+                "id": request.get("id"),
+                "request": {
+                    "appId": request.get("id"),
+                    "extension": extension_time,
+                    "isGlobal": True,
+                    "lockTime": request.get("lockTime"),
+                    "platform": request.get("platform"),
+                    "requestedTime": request.get("requestedTime")
+                },
+                "type": request.get("type")
+            },
+            user_id=request["puid"]
+        )
+
+    async def async_deny_pending_request(self, user_id, body):
+        """Send a POST request to deny a pending request."""
+        return await self.send_request("deny_pending_request", USER_ID=user_id, body=body)
+
+    async def async_approve_pending_request(self, user_id, body):
+        """Send a POST request to approve a pending request."""
+        return await self.send_request("approve_pending_request", USER_ID=user_id, body=body)
+
+    async def async_override_device_restriction(self, user_id, body):
+        """Send a POST request to override device restrictions."""
+        return await self.send_request("override_device_restriction", USER_ID=user_id, body=body)
