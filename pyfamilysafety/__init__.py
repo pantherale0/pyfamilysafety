@@ -95,7 +95,7 @@ class FamilySafety:
                 data = await self._api.send_request("get_accounts")
                 self.accounts = await Account.from_dict(
                     self._api,
-                    data,
+                    data["json"],
                     self.experimental
                 )
             coros = []
