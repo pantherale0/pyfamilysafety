@@ -35,12 +35,11 @@ class FamilySafetyAPI:
             _LOGGER.debug("Token refresh required before continuing")
             await self._auth.perform_refresh()
 
-        # add headers to override
         if headers is None:
             headers = {}
-            headers["Authorization"] = self._auth.access_token
-            headers["User-Agent"] = USER_AGENT
-            headers["Content-Type"] = "application/json"
+        headers["Authorization"] = self._auth.access_token
+        headers["User-Agent"] = USER_AGENT
+        headers["Content-Type"] = "application/json"
         if platform is not None:
             headers["Plat-Info"] = platform
 
