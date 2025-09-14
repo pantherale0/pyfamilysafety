@@ -2,5 +2,5 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-aiohttp>=3.7.0
+aiohttp>=3.12.14
 python-dateutil>=2.7.0
