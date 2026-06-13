@@ -69,11 +69,11 @@ ENDPOINTS = {
         "method": "GET"
     },
     "get_override_device_restrictions": {
-        "url": "{BASE_URL}/v1/devicelimits/{USER_ID}/overrides",
+        "url": "{BASE_URL}/v4/devicelimits/{USER_ID}/overrides",
         "method": "GET"
     },
     "override_device_restriction": {
-        "url": "{BASE_URL}/v1/devicelimits/{USER_ID}/overrides",
+        "url": "{BASE_URL}/v4/devicelimits/{USER_ID}/overrides",
         "method": "POST"
     },
     "set_app_policy": {

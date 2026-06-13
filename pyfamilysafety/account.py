@@ -10,7 +10,7 @@ from .api import FamilySafetyAPI
 from .device import Device
 from .application import Application
 from .enum import OverrideTarget, OverrideType
-from .helpers import localise_datetime, API_TIMEZONE
+from .helpers import localise_datetime, standardise_datetime, API_TIMEZONE
 from .utils import is_awaitable
 
 _LOGGER = logging.getLogger(__name__)
@@ -154,7 +154,8 @@ class Account:
     async def override_device(self,
                               target: OverrideTarget,
                               override: OverrideType,
-                              valid_until: datetime = None) -> bool:
+                              valid_until: datetime = None,
+                              culture: str = "en-GB") -> bool:
         """Overrides a single device (block/unblock)"""
         if override == OverrideType.UNTIL and valid_until is None:
             raise ValueError("valid_until is required if using OverrideType.UNTIL")
@@ -163,12 +164,42 @@ class Account:
         response = await self._api.async_override_device_restriction(
             user_id=self.user_id,
             body={
-                "overrideType": str(override),
                 "target": str(target),
-                "validUntil": valid_until.strftime("%Y-%m-%dT%H:%M:%SZ")
+                "overrideType": str(override),
+                "validUntil": standardise_datetime(valid_until).strftime("%Y-%m-%dT%H:%M:%S.000%z"),
+                "culture": culture,
             }
         )
         self._update_device_blocked(response.get("json"))
+
+    async def get_web_restrictions(self) -> dict:
+        """Returns the current web filtering restrictions for the account."""
+        response = await self._api.async_get_user_web_restrictions(user_id=self.user_id)
+        return response.get("json")
+
+    async def update_web_restrictions(self, operations: list[dict]) -> dict:
+        """Apply web filtering changes using JSON patch operations."""
+        response = await self._api.async_update_web_restrictions(
+            user_id=self.user_id,
+            body={"operations": operations},
+        )
+        return response.get("json")
+
+    async def add_web_exception(
+            self,
+            website: str,
+            allowed: bool = False,
+            source: str = "") -> dict:
+        """Add a web filtering exception to allow or block a specific website."""
+        return await self.update_web_restrictions([{
+            "op": "Add",
+            "path": "/exceptions",
+            "source": source,
+            "value": {
+                "website": website,
+                "allowed": allowed,
+            },
+        }])
 
     def _update_device_blocked(self, raw_response: dict):
         """updates device(s) blocked status from a overrides response."""

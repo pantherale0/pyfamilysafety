@@ -153,6 +153,14 @@ class FamilySafetyAPI:
         """Retrieve data from endpoint get_user_content_restrictions."""
         return await self.send_request("get_user_content_restrictions", USER_ID=user_id)
 
+    async def async_get_user_web_restrictions(self, user_id):
+        """Retrieve data from endpoint get_user_web_restrictions."""
+        return await self.send_request("get_user_web_restrictions", USER_ID=user_id)
+
+    async def async_update_web_restrictions(self, user_id, body):
+        """Send a PATCH request to update web restrictions."""
+        return await self.send_request("update_web_restrictions", USER_ID=user_id, body=body)
+
     async def async_get_override_device_restrictions(self, user_id):
         """Send a GET request to override device restrictions."""
         return await self.send_request("get_override_device_restrictions", USER_ID=user_id)
