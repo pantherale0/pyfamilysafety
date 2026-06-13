@@ -80,9 +80,9 @@ class FamilySafetyAPI:
                 if response.status == 401:
                     raise Unauthorized()
                 if response.status == 403:
-                    raise RequestDenied(await response.text())
+                    raise RequestDenied(text)
 
-                raise HttpException("HTTP Error", response.status, await response.text())
+                raise HttpException("HTTP Error", response.status, text)
 
         # now return the resp dict
         return resp
@@ -163,7 +163,11 @@ class FamilySafetyAPI:
 
     async def async_get_override_device_restrictions(self, user_id):
         """Send a GET request to override device restrictions."""
-        return await self.send_request("get_override_device_restrictions", USER_ID=user_id)
+        return await self.send_request(
+            "get_override_device_restrictions",
+            USER_ID=user_id,
+            platform="ALL",
+        )
 
     async def async_process_pending_request(
             self,
@@ -214,4 +218,9 @@ class FamilySafetyAPI:
 
     async def async_override_device_restriction(self, user_id, body):
         """Send a POST request to override device restrictions."""
-        return await self.send_request("override_device_restriction", USER_ID=user_id, body=body)
+        return await self.send_request(
+            "override_device_restriction",
+            USER_ID=user_id,
+            body=body,
+            platform="ALL",
+        )
