@@ -10,6 +10,7 @@ from .api import FamilySafetyAPI
 from .device import Device
 from .application import Application
 from .enum import OverrideTarget, OverrideType
+from .schedule import DeviceLimitsSchedule
 from .helpers import localise_datetime, standardise_datetime, API_TIMEZONE
 from .utils import is_awaitable
 
@@ -195,6 +196,24 @@ class Account:
     def get_application(self, application_id) -> Application:
         """Returns a single application."""
         return [x for x in self.applications if x.app_id == application_id][0]
+
+    async def set_device_limits(self, schedule: DeviceLimitsSchedule) -> dict:
+        """Set screen time limits for a platform on the account.
+
+        Args:
+            schedule: Platform-specific limits built from
+                :class:`~pyfamilysafety.schedule.DeviceLimitsSchedule`.
+
+        Returns:
+            The API response body, if present.
+        """
+        body = schedule.to_dict()
+        body["time"] = localise_datetime(datetime.now()).strftime("%Y-%m-%dT%H:%M:%S%z")
+        response = await self._api.async_update_schedule(
+            user_id=self.user_id,
+            body=body,
+        )
+        return response.get("json")
 
     async def override_device(self,
                               target: OverrideTarget,

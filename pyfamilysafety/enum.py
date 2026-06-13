@@ -38,3 +38,23 @@ class OverrideType(Enum):
         if self.name == "UNTIL":
             return "BlockUntil"
         return self.name
+
+class DayOfWeek(Enum):
+    """Days used in device limit schedules."""
+    MONDAY = "monday"
+    TUESDAY = "tuesday"
+    WEDNESDAY = "wednesday"
+    THURSDAY = "thursday"
+    FRIDAY = "friday"
+    SATURDAY = "saturday"
+    SUNDAY = "sunday"
+
+    def __str__(self) -> str:
+        return self.value
+
+class DeviceLimitsMode(Enum):
+    """How device limits are applied."""
+    PER_DEVICE_TYPE = "PerDeviceType"
+
+    def __str__(self) -> str:
+        return self.value

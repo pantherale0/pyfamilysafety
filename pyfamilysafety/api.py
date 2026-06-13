@@ -224,3 +224,12 @@ class FamilySafetyAPI:
             body=body,
             platform="ALL",
         )
+
+    async def async_update_schedule(self, user_id, body):
+        """Send a PATCH request to update device limits for a platform.
+
+        Prefer :meth:`~pyfamilysafety.account.Account.set_device_limits` with a
+        :class:`~pyfamilysafety.schedule.DeviceLimitsSchedule` instead of
+        calling this directly.
+        """
+        return await self.send_request("update_schedule", USER_ID=user_id, body=body)
