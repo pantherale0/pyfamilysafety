@@ -1,4 +1,5 @@
 name: documentation
+
 on:
   push:
     branches:
@@ -7,17 +8,25 @@ on:
       - "docs/**"
       - "mkdocs.yml"
       - "requirements.docs.txt"
+  workflow_dispatch:
+
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Configure Git Credentials
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
       - uses: actions/setup-python@v6
         with:
           python-version: 3.x
@@ -28,9 +37,15 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - name: "Install requirements"
+      - name: Install requirements
         run: python3 -m pip install -r "${{ github.workspace }}/requirements.docs.txt"
-      - name: "Install package for API docs"
+      - name: Install package for API docs
         run: python3 -m pip install -e "${{ github.workspace }}"
-      - run: mkdocs build --strict
-      - run: mkdocs gh-deploy --force
+      - name: Build documentation
+        run: mkdocs build --strict
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
