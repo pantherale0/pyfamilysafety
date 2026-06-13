@@ -17,7 +17,25 @@ from .utils import is_awaitable
 _LOGGER = logging.getLogger(__name__)
 
 class Account:
-    """Represents a single family safety account."""
+    """A family member with Digital Safety enabled.
+
+    Attributes:
+        user_id: Microsoft member identifier.
+        role: Family role from the roster API.
+        first_name: Member first name.
+        surname: Member last name.
+        profile_picture: Profile image URL.
+        devices: Registered devices, populated by :meth:`update`.
+        applications: Apps from the activity report, populated by :meth:`update`.
+        today_screentime_usage: Total device screen time today in milliseconds.
+        average_screentime_usage: Daily average screen time from the API.
+        screentime_usage: Raw device screen-time report JSON.
+        application_usage: Raw app activity report JSON.
+        blocked_platforms: Platforms with an active device override block.
+        account_balance: Microsoft Store allowance balance when available.
+        account_currency: Currency code for ``account_balance``.
+        experimental: Mirrors the parent :class:`FamilySafety` experimental flag.
+    """
 
     def __init__(self, api) -> None:
         """Init an account."""
@@ -151,9 +169,21 @@ class Account:
     async def get_screentime_usage(self,
                                    start_time: datetime = None,
                                    end_time: datetime = None,
-                                   device_count = 4,
+                                   device_count: int = 4,
                                    platform: str = "ALL") -> dict:
-        """Returns screentime usage for the account."""
+        """Return screen time usage for a time range.
+
+        Args:
+            start_time: Range start; defaults to start of today (local).
+            end_time: Range end; defaults to end of today (local).
+            device_count: Maximum devices in the device usage report.
+            platform: Platform filter (e.g. ``ALL``, ``WINDOWS``, ``XBOX``).
+
+        Returns:
+            When default times are used, returns cached ``screentime_usage`` after
+            updating account fields. Otherwise a dict with ``devices`` and
+            ``applications`` keys containing raw JSON payloads.
+        """
         default = False
         if start_time is None:
             default = True
@@ -220,7 +250,22 @@ class Account:
                               override: OverrideType,
                               valid_until: datetime = None,
                               culture: str = "en-GB") -> bool:
-        """Overrides a single device (block/unblock)"""
+        """Block or unblock a platform for this member.
+
+        Args:
+            target: Platform to override (:class:`~pyfamilysafety.enum.OverrideTarget`).
+            override: ``OverrideType.UNTIL`` to block until a time, or
+                ``OverrideType.CANCEL`` to remove a block.
+            valid_until: Required when ``override`` is ``UNTIL``; ignored for
+                ``CANCEL`` (set to now internally).
+            culture: Locale string sent to the API (default ``en-GB``).
+
+        Returns:
+            ``True`` on success (implicit; method updates local block state).
+
+        Raises:
+            ValueError: If ``override`` is ``UNTIL`` and ``valid_until`` is omitted.
+        """
         if override == OverrideType.UNTIL and valid_until is None:
             raise ValueError("valid_until is required if using OverrideType.UNTIL")
         if override == OverrideType.CANCEL:
@@ -237,12 +282,23 @@ class Account:
         self._update_device_blocked(response.get("json"))
 
     async def get_web_restrictions(self) -> dict:
-        """Returns the current web filtering restrictions for the account."""
+        """Return current web filtering settings for this member.
+
+        Returns:
+            Parsed JSON from the web restrictions API.
+        """
         response = await self._api.async_get_user_web_restrictions(user_id=self.user_id)
         return response.get("json")
 
     async def update_web_restrictions(self, operations: list[dict]) -> dict:
-        """Apply web filtering changes using JSON patch operations."""
+        """Apply web filtering changes using JSON Patch operations.
+
+        Args:
+            operations: List of patch operation dicts (``op``, ``path``, ``value``, etc.).
+
+        Returns:
+            Parsed JSON response from the API, if present.
+        """
         response = await self._api.async_update_web_restrictions(
             user_id=self.user_id,
             body={"operations": operations},
@@ -254,7 +310,16 @@ class Account:
             website: str,
             allowed: bool = False,
             source: str = "") -> dict:
-        """Add a web filtering exception to allow or block a specific website."""
+        """Add a web filtering exception for a specific website.
+
+        Args:
+            website: Domain or URL to except from the default filter.
+            allowed: ``True`` to always allow; ``False`` to always block.
+            source: Optional source label sent to the API.
+
+        Returns:
+            Parsed JSON response from the API, if present.
+        """
         return await self.update_web_restrictions([{
             "op": "Add",
             "path": "/exceptions",

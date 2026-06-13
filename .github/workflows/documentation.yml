@@ -30,4 +30,7 @@ jobs:
             mkdocs-material-
       - name: "Install requirements"
         run: python3 -m pip install -r "${{ github.workspace }}/requirements.docs.txt"
+      - name: "Install package for API docs"
+        run: python3 -m pip install -e "${{ github.workspace }}"
+      - run: mkdocs build --strict
       - run: mkdocs gh-deploy --force

@@ -1,0 +1,84 @@
+site_name: pyfamilysafety
+site_url: https://pantherale0.github.io/pyfamilysafety/
+repo_url: https://github.com/pantherale0/pyfamilysafety
+repo_name: pantherale0/pyfamilysafety
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: blue
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_root_heading: true
+            show_source: true
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Authentication: getting-started/authentication.md
+      - Quick start: getting-started/quick-start.md
+  - User guide:
+      - FamilySafety client: guide/family-safety-client.md
+      - Accounts: guide/accounts.md
+      - Devices: guide/devices.md
+      - Screen time: guide/screen-time.md
+      - Device limits: guide/device-limits.md
+      - Device overrides: guide/device-overrides.md
+      - Pending requests: guide/pending-requests.md
+      - Applications: guide/applications.md
+      - Web filtering: guide/web-filtering.md
+      - Spending: guide/spending.md
+  - API reference:
+      - Overview: reference/index.md
+      - FamilySafety: reference/family-safety.md
+      - Authenticator: reference/authenticator.md
+      - Account: reference/account.md
+      - Device: reference/device.md
+      - Application: reference/application.md
+      - Schedules: reference/schedule.md
+      - Enums: reference/enums.md
+      - Exceptions: reference/exceptions.md
+      - API internals: reference/api-internals.md
+  - Advanced:
+      - Architecture: advanced/architecture.md
+      - Error handling: advanced/error-handling.md
+      - Timezones: advanced/timezones.md
+      - Logging: advanced/logging.md
+      - Endpoint map: advanced/endpoints.md
+  - FAQ: faq.md
+  - Changelog: changelog.md

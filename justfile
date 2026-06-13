@@ -59,3 +59,11 @@ mypy:
 # Test the project
 test:
     {{VIRTUAL_BIN}}/pytest
+
+# Serve documentation locally
+docs-serve:
+    {{VIRTUAL_BIN}}/mkdocs serve
+
+# Build documentation (strict mode)
+docs-build:
+    {{VIRTUAL_BIN}}/mkdocs build --strict

@@ -13,7 +13,15 @@ def get_platform(app_id: str):
         return "MOBILE"
 
 class Application:
-    """Application."""
+    """An application from the member's app activity report.
+
+    Attributes:
+        app_id: Application identifier (prefix indicates platform).
+        name: Display name.
+        icon: Icon URL.
+        policy: Raw policy object from the API.
+        blocked: Whether the app is currently blocked.
+    """
 
     def __init__(self, api: FamilySafetyAPI, user_id):
         self.app_id = None
@@ -35,7 +43,11 @@ class Application:
         self.blocked = app.blocked
 
     async def block_app(self):
-        """Blocks this application from running."""
+        """Block this application from running.
+
+        Posts an app policy update with ``blockState`` set to ``BlockedAlways``.
+        Updates :attr:`blocked` to ``True`` on success.
+        """
         await self._api.send_request(
             endpoint="set_app_policy",
             body={
@@ -53,7 +65,11 @@ class Application:
         self.blocked = True
 
     async def unblock_app(self):
-        """Allows this application to run."""
+        """Remove the block on this application.
+
+        Posts an app policy update with ``blockState`` set to ``NotBlocked``.
+        Updates :attr:`blocked` to ``False`` on success.
+        """
         await self._api.send_request(
             endpoint="set_app_policy",
             body={
@@ -94,5 +110,9 @@ class Application:
 
     @property
     def usage(self) -> float:
-        """Returns the usage, adjused in minutes."""
+        """Screen time used by this app in the current report period.
+
+        Returns:
+            Usage in **minutes** (converted from milliseconds in the API).
+        """
         return (self._usage/1000)/60

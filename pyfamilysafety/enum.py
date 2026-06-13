@@ -3,7 +3,13 @@
 from enum import Enum
 
 class OverrideTarget(Enum):
-    """A list of targets to override the lock state."""
+    """Platform target for device limits and override actions.
+
+    Attributes:
+        DESKTOP: Windows PCs and similar desktop devices.
+        XBOX: Xbox consoles.
+        MOBILE: Phones and tablets.
+    """
     DESKTOP = 0
     XBOX = 1
     MOBILE = 2
@@ -18,8 +24,12 @@ class OverrideTarget(Enum):
         return self.name
 
     @classmethod
-    def from_pretty(cls, pretty) -> 'OverrideTarget':
-        """Returns from pretty."""
+    def from_pretty(cls, pretty: str) -> 'OverrideTarget':
+        """Parse an API display string into an enum member.
+
+        Args:
+            pretty: One of ``Desktop``, ``Mobile``, or ``Xbox``.
+        """
         if pretty == "Desktop":
             return cls.DESKTOP
         if pretty == "Mobile":
@@ -28,7 +38,12 @@ class OverrideTarget(Enum):
             return cls.XBOX
 
 class OverrideType(Enum):
-    """A list of override types."""
+    """How to apply a device override (block or unblock).
+
+    Attributes:
+        CANCEL: Remove an active block immediately.
+        UNTIL: Block until a given ``valid_until`` datetime.
+    """
     CANCEL = 0
     UNTIL = 1
 
@@ -40,7 +55,10 @@ class OverrideType(Enum):
         return self.name
 
 class DayOfWeek(Enum):
-    """Days used in device limit schedules."""
+    """Days used in device limit schedules.
+
+    Serialized as lowercase English day names (``monday``, ``tuesday``, …).
+    """
     MONDAY = "monday"
     TUESDAY = "tuesday"
     WEDNESDAY = "wednesday"
@@ -53,7 +71,11 @@ class DayOfWeek(Enum):
         return self.value
 
 class DeviceLimitsMode(Enum):
-    """How device limits are applied."""
+    """How device limits are applied to a platform schedule.
+
+    Attributes:
+        PER_DEVICE_TYPE: Limits apply per device type (default API mode).
+    """
     PER_DEVICE_TYPE = "PerDeviceType"
 
     def __str__(self) -> str:

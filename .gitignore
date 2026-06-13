@@ -7,3 +7,5 @@ __pycache__
 dist
 htmlcov
 .venv
+.docs-venv
+site

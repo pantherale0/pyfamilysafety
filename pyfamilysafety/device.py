@@ -1,7 +1,22 @@
 """Defines a Microsoft Device."""
 
 class Device:
-    """Instance of a device."""
+    """A device registered to a family member.
+
+    Attributes:
+        device_id: Unique identifier (``g:`` prefix stripped).
+        device_name: Friendly display name.
+        device_class: Device class from the API.
+        device_make: Hardware manufacturer.
+        device_model: Hardware model name.
+        form_factor: Form factor string (phone, console, etc.).
+        os_name: Operating system name.
+        today_time_used: Screen time today in milliseconds, if reported.
+        issues: Raw issue list from the API.
+        states: Raw state list from the API.
+        last_seen: Last-seen timestamp from the API.
+        blocked: Whether the device is blocked via a platform override.
+    """
 
     def __init__(self) -> None:
         """Init a device."""
