@@ -5,7 +5,7 @@ import logging
 import asyncio
 from datetime import datetime, timedelta
 
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import aiohttp
 from pyfamilysafety.exceptions import Unauthorized
@@ -70,15 +70,13 @@ class Authenticator:
         """Parses a redirect_url."""
         _LOGGER.debug(">> Parsing redirect_url.")
         try:
-            url = urlparse(redirect_url)
-            params = url.query.split('&')
-            response = {}
-            for param in params:
-                response = {
-                    **response,
-                    param.split('=')[0]: param.split('=')[1]
-                }
+            params = parse_qs(urlparse(redirect_url.strip()).query)
+            response = {key: values[0] for key, values in params.items()}
+            if "code" not in response:
+                raise ValueError("Redirect URL is missing the 'code' parameter.")
             return response
+        except ValueError:
+            raise
         except Exception as exc:
             raise ValueError("Invalid URL provided.") from exc
 

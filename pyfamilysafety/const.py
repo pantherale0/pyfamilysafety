@@ -2,7 +2,7 @@
 """pyfamilysafety"""
 
 BASE_URL = "https://mobileaggregator.family.microsoft.com/api"
-APP_VERSION = "v 1.26.0.1001"
+APP_VERSION = "v 2.0.6.1139"
 USER_AGENT = f"Family Safety-prod/({APP_VERSION}) Android/33 google/Pixel 4 XL"
 
 AGGREGATOR_ERROR = "Something went wrong in the Aggregator service"
