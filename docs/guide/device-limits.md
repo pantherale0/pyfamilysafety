@@ -55,6 +55,16 @@ async def main():
 asyncio.run(main())
 ```
 
+## Reading current schedules
+
+`Account.update()` loads the current schedules into `Account.schedule`, a dict of
+`DeviceLimitsSchedule` keyed by platform. `Account.get_schedule()` returns the same dict.
+
+```python
+for platform, schedule in account.get_schedule().items():
+    print(platform, schedule.daily_restrictions)
+```
+
 ## Schedule building blocks
 
 | Class | Purpose |

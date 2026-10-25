@@ -24,7 +24,7 @@ async def main():
     while True:
         for account in family_safety.accounts:
             _LOGGER.debug("Discovered account %s, label %s", account.user_id, account.first_name)
-            _LOGGER.debug(account)
+            _LOGGER.debug(account.to_json())
             _LOGGER.debug("Usage today %s", account.today_screentime_usage)
 
         _LOGGER.debug("ping")
