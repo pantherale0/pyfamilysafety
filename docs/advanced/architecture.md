@@ -39,7 +39,7 @@ sequenceDiagram
     FS->>API: get_accounts
     API->>MS: GET /v2/roster
     FS->>FS: Account.update per member
-    API->>MS: devices, screentime, overrides, spending
+    API->>MS: devices, screentime, overrides, spending, schedule
 ```
 
 ## Layer responsibilities
@@ -51,12 +51,12 @@ sequenceDiagram
 | `FamilySafety` | Roster cache, pending requests, coordinates account updates |
 | `Account` | Per-member state: devices, apps, usage, limits, web filtering |
 | `Device`, `Application` | Parsed domain models |
-| `schedule` | Payload builders for device limit PATCH requests |
+| `schedule` | Payload builders for device limit PATCH requests and parser for the current schedule |
 
 ## Concurrency
 
 - `FamilySafety.update()` uses `asyncio.gather` to refresh all accounts in parallel.
-- `Account.update()` parallelizes device list, screen time, overrides, and spending.
+- `Account.update()` parallelizes device list, screen time, overrides, spending, and schedules.
 - `Authenticator` uses an `asyncio.Lock` to serialize login and refresh operations.
 
 ## User-Agent

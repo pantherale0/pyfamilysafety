@@ -5,6 +5,7 @@ import logging
 
 import aiohttp
 import aiohttp.client_exceptions
+from datetime import datetime
 
 from .authenticator import Authenticator
 from .const import ENDPOINTS, BASE_URL, AGGREGATOR_ERROR, USER_AGENT
@@ -42,6 +43,9 @@ class FamilySafetyAPI:
         headers["Content-Type"] = "application/json"
         if platform is not None:
             headers["Plat-Info"] = platform
+
+        # Add the current time to kwargs just in case it's needed
+        kwargs['CURRENT_TIME'] = datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
 
         # format the URL using the kwargs
         url = e_point.get("url")
@@ -166,7 +170,15 @@ class FamilySafetyAPI:
         return await self.send_request(
             "get_override_device_restrictions",
             USER_ID=user_id,
-            platform="ALL",
+            platform="ALL"
+        )
+
+    async def async_get_schedule(self, user_id):
+        """Send a GET request to get all schedules"""
+        return await self.send_request(
+            "get_schedule",
+            USER_ID=user_id,
+            platform="Windows" # We can put whatever here, it will get all platforms
         )
 
     async def async_process_pending_request(

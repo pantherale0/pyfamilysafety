@@ -14,6 +14,7 @@ Base URL: `https://mobileaggregator.family.microsoft.com/api`
 | `get_premium_entitlement` | GET | `FamilySafetyAPI.async_get_premium_entitlement()` |
 | `get_user_device_screentime_usage` | GET | `Account.get_screentime_usage()` / `update()` |
 | `get_user_app_screentime_usage` | GET | `Account.get_screentime_usage()` / `update()` |
+| `get_schedule` | GET | `Account.update()` |
 | `update_schedule` | PATCH | `Account.set_device_limits()` |
 | `get_user_devices` | GET | `Account.update()` |
 | `get_user_spending` | GET | `Account.update()` |

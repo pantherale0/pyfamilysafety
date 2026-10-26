@@ -89,6 +89,26 @@ class DeviceLimitsSchedule:
         self.mode = mode
         self.culture = culture
 
+    @classmethod
+    def from_dict(cls, apiDict:dict):
+        """
+        Initializes using the dictionary from the API call. Start from a
+        "schedules" list entry for the selected platform.
+        """
+        platform = apiDict["appliesTo"]
+        mode = DeviceLimitsMode.PER_DEVICE_TYPE
+        daily_restrictions = {}
+        for day in apiDict["dailyRestrictions"].keys():
+            dailyRestrictionDict = apiDict["dailyRestrictions"][day]
+
+            allottedIntervals = []
+            for interval in dailyRestrictionDict["allottedIntervals"]:
+                allottedIntervals.append(AllottedInterval(interval["begin"], interval["end"]))
+            
+            dailyRestriction = DailyRestriction(dailyRestrictionDict["allowance"], allottedIntervals)
+            daily_restrictions[day] = dailyRestriction
+        return cls(platform, daily_restrictions, mode)
+
     def to_dict(self) -> dict:
         """Convert to the API request format."""
         return {

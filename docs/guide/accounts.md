@@ -15,6 +15,7 @@ After `update()`, common attributes include:
 | `profile_picture` | Profile image URL |
 | `devices` | List of `Device` objects |
 | `applications` | List of `Application` objects |
+| `schedule` | Current device limit schedules, keyed by platform |
 | `today_screentime_usage` | Total device screen time today (ms) |
 | `average_screentime_usage` | Daily average from the API |
 | `blocked_platforms` | Platforms currently blocked via override |
@@ -30,7 +31,7 @@ await account.update()
 ```
 
 This fetches devices, device and app screen time (today), override/block state,
-and spending balance in parallel.
+spending balance, and device limit schedules in parallel.
 
 ## Screen time queries
 

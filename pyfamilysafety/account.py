@@ -2,8 +2,10 @@
 """Family safety account handler."""
 
 import asyncio
+import json
 import logging
 from datetime import datetime, date, time
+from enum import Enum
 from urllib.parse import quote_plus
 
 from .api import FamilySafetyAPI
@@ -27,6 +29,7 @@ class Account:
         profile_picture: Profile image URL.
         devices: Registered devices, populated by :meth:`update`.
         applications: Apps from the activity report, populated by :meth:`update`.
+        schedule: The current screentime schedule for each device type.
         today_screentime_usage: Total device screen time today in milliseconds.
         average_screentime_usage: Daily average screen time from the API.
         screentime_usage: Raw device screen-time report JSON.
@@ -46,6 +49,7 @@ class Account:
         self.surname = None
         self.devices: list[Device] = None
         self.applications: list[Application] = []
+        self.schedule: dict = None
         self.today_screentime_usage: int = None
         self.average_screentime_usage: float = None
         self.screentime_usage: dict = None
@@ -56,6 +60,19 @@ class Account:
         self.account_balance: float = 0.0
         self.account_currency: str = ""
         self._account_callbacks: list = []
+
+    def to_json(self, indent: int = 2) -> str:
+        """Returns all public account fields as a pretty-printed JSON string."""
+        def _default(obj):
+            if isinstance(obj, (datetime, date, time)):
+                return obj.isoformat()
+            if isinstance(obj, Enum):
+                return obj.name
+            if hasattr(obj, "__dict__"):
+                return {k: v for k, v in vars(obj).items() if not k.startswith("_")}
+            return str(obj)
+
+        return json.dumps(_default(self), default=_default, indent=indent)
 
     def add_account_callback(self, callback):
         """Add a callback to the account."""
@@ -80,6 +97,7 @@ class Account:
             application_usage,
             overrides_response,
             _,
+            _
         ) = await asyncio.gather(
             self._api.async_get_user_devices(user_id=self.user_id),
             self._api.async_get_user_device_screentime_usage(
@@ -97,6 +115,7 @@ class Account:
             ),
             self._api.async_get_override_device_restrictions(user_id=self.user_id),
             self._get_account_balance(),
+            self._get_schedule()
         )
         self._apply_screentime_usage(device_usage.get("json"), application_usage.get("json"))
         self.devices = Device.from_dict(devices_response.get("json"), self.screentime_usage)
@@ -166,6 +185,21 @@ class Account:
             self.account_balance = balances[0]["balance"]
             self.account_currency = balances[0]["currency"]
 
+    async def _get_schedule(self):
+        """
+        Retrieves the current device schedule.
+        """
+        response = await self._api.async_get_schedule(
+            user_id=self.user_id
+        )
+        response = response["json"]
+        self.schedule = {}
+        for oneDeviceSchedule in response["schedules"]:
+            deviceLimitsObject = DeviceLimitsSchedule.from_dict(oneDeviceSchedule)
+            self.schedule[deviceLimitsObject.platform] = deviceLimitsObject
+        
+        
+
     async def get_screentime_usage(self,
                                    start_time: datetime = None,
                                    end_time: datetime = None,
@@ -226,6 +260,10 @@ class Account:
     def get_application(self, application_id) -> Application:
         """Returns a single application."""
         return [x for x in self.applications if x.app_id == application_id][0]
+
+    def get_schedule(self) -> DeviceLimitsSchedule:
+        """Returns the current schedule."""
+        return self.schedule
 
     async def set_device_limits(self, schedule: DeviceLimitsSchedule) -> dict:
         """Set screen time limits for a platform on the account.

@@ -36,6 +36,10 @@ ENDPOINTS = {
         "url": "{BASE_URL}/v4/devicelimits/schedules/{USER_ID}",
         "method": "PATCH"
     },
+    "get_schedule": {
+        "url": "{BASE_URL}/v4/devicelimits/schedules/{USER_ID}?time={CURRENT_TIME}",
+        "method": "GET"
+    },
     "get_user_devices": {
         "url": "{BASE_URL}/v1/devices/{USER_ID}",
         "method": "GET"
